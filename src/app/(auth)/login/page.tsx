@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, LogIn, Lock, Mail, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,17 +19,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
+      const res = await loginAction(email, password);
       if (res?.error) {
-        setError("Invalid email address or password.");
-      } else {
-        router.refresh();
-        router.push("/");
+        setError(res.error);
       }
     } catch (err: any) {
       setError("An unexpected error occurred. Please try again.");

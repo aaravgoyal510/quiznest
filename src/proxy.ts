@@ -3,7 +3,17 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  const secureCookie = process.env.NODE_ENV === "production" || req.url.startsWith("https://");
+  const cookieName = secureCookie
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+    cookieName,
+    salt: cookieName,
+  });
   const { pathname } = req.nextUrl;
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
