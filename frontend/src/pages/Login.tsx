@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GraduationCap, LogIn, Lock, Mail, AlertCircle } from "lucide-react";
+import { API_URL } from "../lib/api";
 
 interface LoginProps {
   navigate: (to: string) => void;
@@ -17,8 +18,7 @@ export default function LoginPage({ navigate }: LoginProps) {
     setLoading(true);
 
     try {
-      const apiURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const res = await fetch(`${apiURL}/api/auth/login`, {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
