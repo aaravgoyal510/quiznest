@@ -1,79 +1,92 @@
-# 🎓 Online Quiz Management System
+# 🎓 Quiz Nest — Decoupled Split Architecture Portal
 
-A full-stack, enterprise-grade Online Quiz Management System for educational institutions built with **Next.js 14+ (App Router)**, **TypeScript**, **Supabase PostgreSQL**, **Prisma ORM**, **Auth.js (NextAuth v5)**, **Zod**, and **Tailwind CSS**.
-
----
-
-## 🌟 Key Features
-
-- **🔐 Multi-Role Access Control (RBAC):**
-  - **ADMIN**: User management (Teachers & Students CRUD), Subject management, System activity audit logs.
-  - **TEACHER**: Question Bank authoring (MCQ, True/False, Short Answer), Quiz creation with custom availability windows (`startsAt`/`endsAt`) and duration limits, Student score analytics, Manual short-answer grading, CSV export.
-  - **STUDENT**: View available assessments, take active quizzes with real-time countdown timer, immediate auto-grading for objective questions, past score reports.
-- **🛡️ High Security & Anti-Cheat Guards:**
-  - **Server-Enforced Time Limits**: Submissions and answer updates strictly check `now <= startedAt + durationMinutes` on the server.
-  - **Data Leak Prevention**: Active quiz questions strip `isCorrect` flags and answer keys before sending to student browsers.
-  - **Database Injection Safeguards**: 100% parameterized queries via Prisma ORM.
-  - **Form Validation**: Server-side Zod validation on all actions & routes.
-  - **Password Protection**: Passwords hashed using `bcrypt` (10 rounds).
+Quiz Nest is a full-stack, enterprise-grade Online Quiz Management System for educational institutions. The application has been fully refactored from a monolithic codebase into a highly performant **decoupled split architecture**, separating client-side UI rendering from server-side database transaction layers.
 
 ---
 
-## 🛠️ Tech Stack & Environment
+## 🏗️ Architecture Design & Directory Mapping
 
-- **Framework**: Next.js 14+ (App Router, TypeScript)
-- **Database**: PostgreSQL (Supabase Connection Pooler)
-- **ORM**: Prisma ORM v5
-- **Authentication**: Auth.js (NextAuth v5) Credentials Provider with JWT Sessions
-- **Validation**: Zod
-- **Styling & UI**: Tailwind CSS & Lucide Icons
+The codebase is split into two independent services:
 
----
-
-## 🔑 Environment Variables (`.env`)
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-DATABASE_URL="postgresql://postgres.[PROJECT]:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[PROJECT]:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
-AUTH_SECRET="your-super-secret-nextauth-key"
-NEXTAUTH_URL="http://localhost:3000"
+```text
+quizapp/
+├── backend/          # Standalone Express API Service
+└── frontend/         # React SPA client portal (Vite)
 ```
 
+### 1. Standalone Backend (`backend/`)
+* **Core**: Node.js + Express API server.
+* **Database**: Supabase PostgreSQL database managed via **Prisma ORM**.
+* **Security**: Stateless **JWT token-based auth** with token-version verification middleware.
+* **Integrations**: **Resend** for password reset emails and **Sentry Node** for error telemetry tracking.
+
+### 2. Single-Page Application Client (`frontend/`)
+* **Core**: **React 19** bundled using **Vite**.
+* **Styling**: Vanilla CSS custom utility system with **Tailwind CSS**.
+* **Security**: Client-side auth state sync and navigation guards.
+* **Integrations**: **Sentry React** for client-side crash tracking and component error boundaries.
+
 ---
 
-## 🚀 Setup & Execution Instructions
+## 🔌 How They Connect
+1. **Client-Side Requests**: The React frontend (running on `http://localhost:3000`) communicates with the API service (running on `http://localhost:5000`) via `fetch` calls.
+2. **Authentication**: Upon successful credential checks, the backend issues a signed JWT. The client stores this token in `localStorage` and appends it to subsequent queries in the request headers:
+   `Authorization: Bearer <JWT_token>`
+3. **CORS Security**: The backend is configured to authorize requests **only** from the origin declared in its `FRONTEND_URL` environment variable (preventing unauthorized external client requests).
 
-### 1. Install Dependencies
+---
+
+## 🚀 Local Development Quick Start
+
+Run both services in separate terminal sessions:
+
+### 1. Launch Backend API Service
 ```bash
+cd backend
+# 1. Install dependencies
 npm install
-```
-
-### 2. Database Migration & Schema Push
-To sync your Prisma schema with the Supabase PostgreSQL database:
-```bash
+# 2. Synchronize Prisma model schemas
 npx prisma db push
-```
-
-### 3. Seed Initial Demo Accounts & Data
-Populate demo Admin, Teacher, and Student accounts along with subjects, question bank items, and an active assessment:
-```bash
+# 3. Seed demo credentials database
 npx ts-node prisma/seed.ts
-```
-
-### 4. Run Development Server
-```bash
+# 4. Start hot-reloading dev server
 npm run dev
 ```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+The API will list on **`http://localhost:5000`**.
+
+### 2. Launch Frontend Client Portal
+```bash
+cd frontend
+# 1. Install dependencies
+npm install
+# 2. Start hot-reloading dev server
+npm run dev
+```
+Open **`http://localhost:3000`** in your browser.
 
 ---
 
-## 👤 Demo Institutional Accounts
+## 👤 Test Institutional Accounts
 
-| Role | Email | Password | Access Path |
-|---|---|---|---|
+Use the following pre-seeded demo profiles to sign in:
+
+| Role | Email | Password | Access Dashboard |
+| :--- | :--- | :--- | :--- |
 | **Admin** | `admin@institution.edu` | `Admin123!` | `/admin/dashboard` |
 | **Teacher** | `teacher@institution.edu` | `Teacher123!` | `/teacher/dashboard` |
 | **Student** | `student@institution.edu` | `Student123!` | `/student/dashboard` |
+
+---
+
+## 🛠️ Deployment Guidelines
+
+### 1. Deploying Frontend
+The frontend builds into optimized static HTML, CSS, and JS assets. It can be deployed to any static host (e.g. Vercel, Netlify, Cloudflare Pages, AWS S3):
+* Run compilation: `npm run build`
+* Deploy the output **`dist/`** directory.
+* Set `VITE_API_URL` environment build variable pointing to your deployed backend API domain.
+
+### 2. Deploying Backend
+The backend can be deployed to any container hosting provider (e.g. Render, Railway, AWS ECS, Heroku):
+* Deploy the Express code.
+* Inject host environment variables (`DATABASE_URL`, `JWT_SECRET`, `PORT`, `FRONTEND_URL`, `RESEND_API_KEY`, `SENTRY_DSN`).
