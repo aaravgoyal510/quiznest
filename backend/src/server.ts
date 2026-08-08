@@ -27,7 +27,7 @@ app.use(
       ) {
         callback(null, true);
       } else {
-        callback(null, true);
+        callback(new Error("CORS policy violation: Origin not allowed"), false);
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
